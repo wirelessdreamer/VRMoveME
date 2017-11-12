@@ -5,7 +5,7 @@
 1. mounts to mount trackers to drop legs: https://www.thingiverse.com/thing:2633427
 1. Load Bearing Gear (I use an hsgi battle belt, and condor molle drop legs), links to products on amazon comming soon
 
-Set up in existing project that already has SteamVR
+## Set up in existing project that already has SteamVR
 
 1. Open The CameraRig Prefab
 1. Attach the VRMoveME Script to it
