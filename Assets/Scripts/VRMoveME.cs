@@ -12,8 +12,9 @@ public class VRMoveME : MonoBehaviour {
 
     public GameObject CameraRig;
     public GameObject ReverseControllerDirection;
-    public float maxMovementMultiplier = 0.4f;
+    public float maxMovementMultiplier = 0.6f;
     public int yMovementLimit = 10; // number of update frames in a row moving in the same direction before we ignore movement
+    public float TrackerCutoffThreshold = 0.02f; // This is to filter out when we are idle, and there is small movement in the tracker, so players don't move when standing still, and slightly moving
     public float inFrontLimitDistance = 0.5f;
     private int direction = 0;
     public SteamVR_TrackedObject tracker1;
@@ -21,35 +22,40 @@ public class VRMoveME : MonoBehaviour {
     public SteamVR_TrackedObject rightFootObj;
     public SteamVR_TrackedObject leftFootObj;
     public SteamVR_TrackedObject HeadsetObj;
+    SteamVR_Controller.Device leftFoot;
+    SteamVR_Controller.Device rightFoot;
 
     public bool enableMotion = true;
-    public string obstacleLayerName = "Obstacles"; // We don't want to be able to run though these
-    public string canShootNotMoveLayerName = "canShootNotMove"; // This layer we can't run through, but can shoot through
+    public string obstacleLayerName = "Obstacles";
+    public string canShootNotMoveLayerName = "canShootNotMove";
     private int gunType;
     private int movementType;
+    private bool Debug = true;
+    public float RightMovementMultiplier;
+    public float LeftMovementMultiplier;
+
+    // Use this for initialization
+    void Start()
+    {
+    }
 
     // Update is called once per frame
     void Update()
     {
         if (!enableMotion)
         {
-            Debug.Log("VRMove Me Motion not enabled");
+            //Debug.Log("VRMove Me Motion not enabled");
             return;
         }
-
-        SteamVR_Controller.Device leftFoot;
-        SteamVR_Controller.Device rightFoot;
         SteamVR_Controller.Device headset;
-
+        
         rightFootObj = tracker1;
         leftFootObj = tracker2;
-        
 
         leftFoot = SteamVR_Controller.Input((int)leftFootObj.index);
         rightFoot = SteamVR_Controller.Input((int)rightFootObj.index);
         headset = SteamVR_Controller.Input((int)HeadsetObj.index);
 
-        // This is how we make sure to not move the player forward when going prone, or standing up
         if (headset.velocity.y > 0)
         {
             if (direction < 0)
@@ -68,7 +74,8 @@ public class VRMoveME : MonoBehaviour {
             direction--;
         }
 
-        if (enableMotion && Mathf.Abs(direction) < yMovementLimit && leftFoot != null && ((leftFoot.velocity.x > 0) || (leftFoot.velocity.y > 0) || (leftFoot.velocity.z > 0)))
+
+        if (enableMotion && Mathf.Abs(direction) < yMovementLimit && leftFoot != null && (Mathf.Abs(leftFoot.velocity.y) > 0))
         {
             RaycastHit hit;
             Vector3 movementVector = Vector3.ProjectOnPlane(ReverseControllerDirection.transform.up, Vector3.up);
@@ -80,19 +87,22 @@ public class VRMoveME : MonoBehaviour {
                     canMove = false;
                 }
             }
-            if (canMove)
+            if (canMove && (Mathf.Abs(leftFoot.velocity.y) > TrackerCutoffThreshold))
             {
-                float movementMultiplier = Time.deltaTime * (Mathf.Abs(leftFoot.angularVelocity.x) * Mathf.Abs(leftFoot.angularVelocity.y) * Mathf.Abs(leftFoot.angularVelocity.z) * 1.5f);
-                if (movementMultiplier > maxMovementMultiplier)
+                LeftMovementMultiplier = Time.deltaTime * Mathf.Abs(leftFoot.velocity.y) * 25f;
+                if (LeftMovementMultiplier > maxMovementMultiplier)
                 {
-                    movementMultiplier = maxMovementMultiplier;
+                    LeftMovementMultiplier = maxMovementMultiplier;
                 }
-                CameraRig.transform.position += movementVector * movementMultiplier;
+                //Debug.Log("Movement Multiplier: " + movementMultiplier);
+                CameraRig.transform.position += movementVector * LeftMovementMultiplier;
             }
         }
 
-        if (enableMotion && Mathf.Abs(direction) < yMovementLimit && rightFoot != null && ((rightFoot.angularVelocity.x > 0) || (rightFoot.angularVelocity.y > 0) || (rightFoot.angularVelocity.z > 0)))
+        if (enableMotion && Mathf.Abs(direction) < yMovementLimit && rightFoot != null && (Mathf.Abs(rightFoot.velocity.y) > 0))
         {
+            //Debug.Log("Velocity x: " + rightFoot.velocity.x + " y: " + rightFoot.velocity.y + " z: " + rightFoot.velocity.z);
+            //Debug.Log("angularVelocity x: " + rightFoot.angularVelocity.x + " y: " + rightFoot.angularVelocity.y + " z: " + rightFoot.angularVelocity.z);
             RaycastHit hit;
             Vector3 movementVector = Vector3.ProjectOnPlane(ReverseControllerDirection.transform.up, Vector3.up);
             bool canMove = true;
@@ -103,15 +113,62 @@ public class VRMoveME : MonoBehaviour {
                     canMove = false;
                 }
             }
-            if (canMove)
+            if (canMove && (Mathf.Abs(rightFoot.velocity.y) > TrackerCutoffThreshold))
             {
-                float movementMultiplier = Time.deltaTime * (Mathf.Abs(rightFoot.angularVelocity.x) * Mathf.Abs(rightFoot.angularVelocity.y) * Mathf.Abs(rightFoot.angularVelocity.z) * 1.5f);
-                if (movementMultiplier > maxMovementMultiplier)
+                RightMovementMultiplier = Time.deltaTime * Mathf.Abs(rightFoot.velocity.y) * 25f;
+                if (RightMovementMultiplier > maxMovementMultiplier)
                 {
-                    movementMultiplier = maxMovementMultiplier;
+                    RightMovementMultiplier = maxMovementMultiplier;
                 }
-                CameraRig.transform.position += movementVector * movementMultiplier;
+                //Debug.Log("Movement Multiplier: " + movementMultiplier);
+                CameraRig.transform.position += movementVector * RightMovementMultiplier;
             }
+        }
+    }
+
+    void OnGUI()
+    {
+        if (enableMotion && Debug)
+        {
+            string rightFootDisplay = "";
+            string leftFootDisplay = "";
+
+            if (rightFoot != null)
+            {
+                rightFootDisplay = string.Format("Right Foot - Connected:\nangular\nx [{0}]\ny [{1}]\nz [{2}]\nvel\nx [{3}]\ny [{4}]\nz [{5}]\n Multiplier[{6}]\n",
+                    rightFoot.angularVelocity.x,
+                    rightFoot.angularVelocity.y,
+                    rightFoot.angularVelocity.z,
+                    rightFoot.velocity.x,
+                    rightFoot.velocity.y,
+                    rightFoot.velocity.z,
+                    RightMovementMultiplier
+                );
+            }
+            else
+            {
+                rightFootDisplay = string.Format("Right Foot - Disconnected");
+            }
+
+            if (leftFoot != null)
+            {
+                leftFootDisplay = string.Format("Left Foot - Connected:\nangular\nx [{0}]\ny [{1}]\nz [{2}]\nvel\nx [{3}]\ny [{4}]\nz [{5}]\n Multiplier[{6}]\n",
+                    leftFoot.angularVelocity.x,
+                    leftFoot.angularVelocity.y,
+                    leftFoot.angularVelocity.z,
+                    leftFoot.velocity.x,
+                    leftFoot.velocity.y,
+                    leftFoot.velocity.z,
+                    LeftMovementMultiplier
+                );
+            }
+            else
+            {
+                rightFootDisplay = string.Format("Left Foot - Disconnected");
+            }
+
+            GUI.Label(new Rect(10, 10, 500, 300), rightFootDisplay);
+            GUI.Label(new Rect(10, 350, 500, 300), leftFootDisplay);
         }
     }
 }

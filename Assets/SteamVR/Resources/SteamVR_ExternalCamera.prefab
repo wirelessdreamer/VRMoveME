@@ -5,10 +5,10 @@ GameObject:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Component:
-  - 4: {fileID: 417074}
-  - 114: {fileID: 11479102}
+  - component: {fileID: 417074}
+  - component: {fileID: 11479102}
   m_Layer: 0
   m_Name: SteamVR_ExternalCamera
   m_TagString: Untagged
@@ -21,11 +21,11 @@ GameObject:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Component:
-  - 4: {fileID: 444732}
-  - 114: {fileID: 11487396}
-  - 114: {fileID: 11472986}
+  - component: {fileID: 444732}
+  - component: {fileID: 11487396}
+  - component: {fileID: 11472986}
   m_Layer: 0
   m_Name: Controller (third)
   m_TagString: Untagged
@@ -46,6 +46,7 @@ Transform:
   - {fileID: 444732}
   m_Father: {fileID: 0}
   m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &444732
 Transform:
   m_ObjectHideFlags: 1
@@ -58,6 +59,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 417074}
   m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &11472986
 MonoBehaviour:
   m_ObjectHideFlags: 1
