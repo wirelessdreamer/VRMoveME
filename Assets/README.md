@@ -1,20 +1,41 @@
 # VRMoveME
 
 # Required Equipment:
-1. 2 vive trackers (one gets mounted on each leg)
-1. mounts to mount trackers to drop legs: https://www.thingiverse.com/thing:2633427
-1. Load Bearing Gear (I use an hsgi battle belt, and condor molle drop legs), links to products on amazon comming soon
+1. 2 vive trackers (one gets mounted on each leg, or foot)
+1. mounts to mount trackers to drop legs: https://www.thingiverse.com/thing:2633427, or Trackers mounted to feet with Track Straps, Or Tied into shoe laces
 
-## Set up in existing project that already has SteamVR
+# Howto
 
-1. Open The CameraRig Prefab
-1. Attach the VRMoveME Script to it
-1. Drag the Camera Rig GameObject into the Gamera Rig spot
-1. On the Left controller Create an empty game object, I call mine VRMoveMe Orientation, set its y rotation to 180
-1. Duplicate the Right Controller, rename it to Tracker1
-1. Duplicate Tracker1, rename it to Tracker2
-1. Under Steam VR_Controller Manager (on the camera rig) change Objects size from 0 to 2
-1. Drag Tracker1 to element 0, and Tracker2 to element 1
-1. Drag Tracker1 to Tracker 1 in VRMoveME Script, and Tracker2 to Tracker 2 in VRMoveME Script
-1. Drag Camera (Head) Gameobject to Headset Obj in VRMoveME Script
-1. I like to attach a Textmesh to the left controller that says to put it on your back, so people know if they have the correct controller or not.
+
+### Tracker Based Movement ###
+
+Add a body role of LeftFoot and RightFoot for for your feet or legs, then mount vive trackers to your feet or thighs. Track Straps are a simple solution to mount them to your feet https://rebuffreality.com/products/trackstrap
+
+Add a body role of hip for a vive controller and mount it to a belt in the small of your back, facing away from you
+
+Add a body role of head and assign it to your headset
+
+
+### Controler based movement ### 
+
+Assign a body role of Right Hand to a controller to use for movement.
+Point the gun at the ground and press the menu button to move forward, and you raise the gun to aim you will slow to a stop, rotate the controller side to side to strafe
+
+Point the gun up while pressing the button to back up
+
+
+
+
+The Demo scene uses a Character Rig prefab that already has a character controller and the VRMoveMe script attached it it
+There is also a script attached to the main camera that updates the center of the character controller to where ever the players head currently is
+
+
+This Locomotion was Developed for Tactical AR: 
+See: 
+TacticalAR.net
+https://store.steampowered.com/app/720510/Tactical_AR/
+
+if you find this code useful feel free to support us on steam :)
+
+Thanks,
+Nathanael

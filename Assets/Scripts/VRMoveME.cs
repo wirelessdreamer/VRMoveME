@@ -1,62 +1,47 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using HTC.UnityPlugin.Vive;
 
+[RequireComponent(typeof(CharacterController))]
 public class VRMoveME : MonoBehaviour {
 
-    /*
-        TODO
-        Currently when a player walks through a virtual wall in the real world, they can get into place they shouldn't be, we should handle that nicely here.
-
-    */
-
-    public GameObject CameraRig;
     public GameObject ReverseControllerDirection;
+    public float minMovementMultiplier = 0.05f;
     public float maxMovementMultiplier = 0.6f;
+    public float movementMultiplier = 0;
+    public float movementScale = 15;
     public int yMovementLimit = 10; // number of update frames in a row moving in the same direction before we ignore movement
-    public float TrackerCutoffThreshold = 0.02f; // This is to filter out when we are idle, and there is small movement in the tracker, so players don't move when standing still, and slightly moving
-    public float inFrontLimitDistance = 0.5f;
     private int direction = 0;
-    public SteamVR_TrackedObject tracker1;
-    public SteamVR_TrackedObject tracker2;
-    public SteamVR_TrackedObject rightFootObj;
-    public SteamVR_TrackedObject leftFootObj;
-    public SteamVR_TrackedObject HeadsetObj;
-    SteamVR_Controller.Device leftFoot;
-    SteamVR_Controller.Device rightFoot;
+    public ViveRoleProperty rightFoot;
+    public ViveRoleProperty leftFoot;
+    public ViveRoleProperty headSet;
+
+    public float LeftAngularVelocity;
+    public float LeftVelocity;
+    public float RightAngularVelocity;
+    public float RightVelocity;
 
     public bool enableMotion = true;
-    public string obstacleLayerName = "Obstacles";
-    public string canShootNotMoveLayerName = "canShootNotMove";
-    private int gunType;
     private int movementType;
-    private bool Debug = true;
-    public float RightMovementMultiplier;
-    public float LeftMovementMultiplier;
+    CharacterController player;
+
+    public bool ShowDebug = false;
 
     // Use this for initialization
-    void Start()
+    void Awake()
     {
+        player = GetComponent<CharacterController>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (!enableMotion)
         {
-            //Debug.Log("VRMove Me Motion not enabled");
             return;
         }
-        SteamVR_Controller.Device headset;
-        
-        rightFootObj = tracker1;
-        leftFootObj = tracker2;
 
-        leftFoot = SteamVR_Controller.Input((int)leftFootObj.index);
-        rightFoot = SteamVR_Controller.Input((int)rightFootObj.index);
-        headset = SteamVR_Controller.Input((int)HeadsetObj.index);
-
-        if (headset.velocity.y > 0)
+        if (VivePose.GetVelocity(headSet).y > 0)
         {
             if (direction < 0)
             {
@@ -65,7 +50,7 @@ public class VRMoveME : MonoBehaviour {
             direction++;
 
         }
-        else if (headset.velocity.y < 0)
+        else if (VivePose.GetVelocity(headSet).y < 0)
         {
             if (direction > 0)
             {
@@ -74,75 +59,64 @@ public class VRMoveME : MonoBehaviour {
             direction--;
         }
 
-
-        if (enableMotion && Mathf.Abs(direction) < yMovementLimit && leftFoot != null && (Mathf.Abs(leftFoot.velocity.y) > 0))
+        if (enableMotion && Mathf.Abs(direction) < yMovementLimit && leftFoot != null)
         {
-            RaycastHit hit;
+            LeftAngularVelocity = Mathf.Abs(VivePose.GetAngularVelocity(leftFoot).x) + Mathf.Abs(VivePose.GetAngularVelocity(leftFoot).y) + Mathf.Abs(VivePose.GetAngularVelocity(leftFoot).z);
+            LeftVelocity = Mathf.Abs(VivePose.GetVelocity(leftFoot).x) + Mathf.Abs(VivePose.GetVelocity(leftFoot).y) + Mathf.Abs(VivePose.GetVelocity(leftFoot).z);
             Vector3 movementVector = Vector3.ProjectOnPlane(ReverseControllerDirection.transform.up, Vector3.up);
-            bool canMove = true;
-            if (Physics.Raycast(ReverseControllerDirection.transform.position, movementVector, out hit, 10))
+            movementMultiplier = Time.deltaTime * (LeftAngularVelocity + LeftVelocity);
+            if (movementMultiplier > maxMovementMultiplier)
             {
-                if ((hit.transform.gameObject.layer == LayerMask.NameToLayer(obstacleLayerName) || hit.transform.gameObject.layer == LayerMask.NameToLayer(canShootNotMoveLayerName)) && hit.distance < inFrontLimitDistance)
-                {
-                    canMove = false;
-                }
-            }
-            if (canMove && (Mathf.Abs(leftFoot.velocity.y) > TrackerCutoffThreshold))
+                movementMultiplier = maxMovementMultiplier;
+            }else if (movementMultiplier < minMovementMultiplier)
             {
-                LeftMovementMultiplier = Time.deltaTime * Mathf.Abs(leftFoot.velocity.y) * 25f;
-                if (LeftMovementMultiplier > maxMovementMultiplier)
-                {
-                    LeftMovementMultiplier = maxMovementMultiplier;
-                }
-                //Debug.Log("Movement Multiplier: " + movementMultiplier);
-                CameraRig.transform.position += movementVector * LeftMovementMultiplier;
+                movementMultiplier = 0f;
             }
+
+            Vector3 MovementLeftAmount = movementVector * movementMultiplier * movementScale;
+           
+            player.SimpleMove(MovementLeftAmount);
         }
 
-        if (enableMotion && Mathf.Abs(direction) < yMovementLimit && rightFoot != null && (Mathf.Abs(rightFoot.velocity.y) > 0))
+        if (enableMotion && Mathf.Abs(direction) < yMovementLimit && rightFoot != null)
         {
-            //Debug.Log("Velocity x: " + rightFoot.velocity.x + " y: " + rightFoot.velocity.y + " z: " + rightFoot.velocity.z);
-            //Debug.Log("angularVelocity x: " + rightFoot.angularVelocity.x + " y: " + rightFoot.angularVelocity.y + " z: " + rightFoot.angularVelocity.z);
-            RaycastHit hit;
+            RightAngularVelocity = Mathf.Abs(VivePose.GetAngularVelocity(rightFoot).x) + Mathf.Abs(VivePose.GetAngularVelocity(rightFoot).y) + Mathf.Abs(VivePose.GetAngularVelocity(rightFoot).z);
+            RightVelocity = Mathf.Abs(VivePose.GetVelocity(rightFoot).x) + Mathf.Abs(VivePose.GetVelocity(rightFoot).y) + Mathf.Abs(VivePose.GetVelocity(rightFoot).z);
+
             Vector3 movementVector = Vector3.ProjectOnPlane(ReverseControllerDirection.transform.up, Vector3.up);
-            bool canMove = true;
-            if (Physics.Raycast(ReverseControllerDirection.transform.position, movementVector, out hit, 10))
+            
+            movementMultiplier = Time.deltaTime * (RightAngularVelocity + RightVelocity);
+            if (movementMultiplier > maxMovementMultiplier)
             {
-                if ((hit.transform.gameObject.layer == LayerMask.NameToLayer(obstacleLayerName) || hit.transform.gameObject.layer == LayerMask.NameToLayer(canShootNotMoveLayerName)) && hit.distance < inFrontLimitDistance)
-                {
-                    canMove = false;
-                }
+                movementMultiplier = maxMovementMultiplier;
             }
-            if (canMove && (Mathf.Abs(rightFoot.velocity.y) > TrackerCutoffThreshold))
+            else if (movementMultiplier < minMovementMultiplier)
             {
-                RightMovementMultiplier = Time.deltaTime * Mathf.Abs(rightFoot.velocity.y) * 25f;
-                if (RightMovementMultiplier > maxMovementMultiplier)
-                {
-                    RightMovementMultiplier = maxMovementMultiplier;
-                }
-                //Debug.Log("Movement Multiplier: " + movementMultiplier);
-                CameraRig.transform.position += movementVector * RightMovementMultiplier;
+                movementMultiplier = 0f;
             }
+            Vector3 MovementRightAmount = movementVector * movementMultiplier * movementScale;
+
+            player.SimpleMove(MovementRightAmount);
         }
+        player.SimpleMove(new Vector3(0, 0, 0));
     }
 
     void OnGUI()
     {
-        if (enableMotion && Debug)
+        if (enableMotion && ShowDebug)
         {
             string rightFootDisplay = "";
             string leftFootDisplay = "";
 
             if (rightFoot != null)
             {
-                rightFootDisplay = string.Format("Right Foot - Connected:\nangular\nx [{0}]\ny [{1}]\nz [{2}]\nvel\nx [{3}]\ny [{4}]\nz [{5}]\n Multiplier[{6}]\n",
-                    rightFoot.angularVelocity.x,
-                    rightFoot.angularVelocity.y,
-                    rightFoot.angularVelocity.z,
-                    rightFoot.velocity.x,
-                    rightFoot.velocity.y,
-                    rightFoot.velocity.z,
-                    RightMovementMultiplier
+                rightFootDisplay = string.Format("Right Foot - Connected:\nangular\nx [{0}]\ny [{1}]\nz [{2}]\nvel\nx [{3}]\ny [{4}]\nz [{5}]\n",
+                    VivePose.GetAngularVelocity(rightFoot).x,
+                    VivePose.GetAngularVelocity(rightFoot).y,
+                    VivePose.GetAngularVelocity(rightFoot).z,
+                    VivePose.GetVelocity(rightFoot).x,
+                    VivePose.GetVelocity(rightFoot).y,
+                    VivePose.GetVelocity(rightFoot).z
                 );
             }
             else
@@ -152,14 +126,13 @@ public class VRMoveME : MonoBehaviour {
 
             if (leftFoot != null)
             {
-                leftFootDisplay = string.Format("Left Foot - Connected:\nangular\nx [{0}]\ny [{1}]\nz [{2}]\nvel\nx [{3}]\ny [{4}]\nz [{5}]\n Multiplier[{6}]\n",
-                    leftFoot.angularVelocity.x,
-                    leftFoot.angularVelocity.y,
-                    leftFoot.angularVelocity.z,
-                    leftFoot.velocity.x,
-                    leftFoot.velocity.y,
-                    leftFoot.velocity.z,
-                    LeftMovementMultiplier
+                leftFootDisplay = string.Format("Left Foot - Connected:\nangular\nx [{0}]\ny [{1}]\nz [{2}]\nvel\nx [{3}]\ny [{4}]\nz [{5}]\n",
+                    VivePose.GetAngularVelocity(leftFoot).x,
+                    VivePose.GetAngularVelocity(leftFoot).y,
+                    VivePose.GetAngularVelocity(leftFoot).z,
+                    VivePose.GetVelocity(leftFoot).x,
+                    VivePose.GetVelocity(leftFoot).y,
+                    VivePose.GetVelocity(leftFoot).z
                 );
             }
             else
